@@ -147,4 +147,86 @@ hive> select * from url_struct2;
 yoursite.com	bigdata	mongodb	Raj	25	NULL	hyd	NULL
 yoursite.com	bigdata	spark	Swapna	NULL	NULL	del	se
 
- 
+----------------------------------------------------------------XML------------------------
+create table in LFS populated with xml file format data.
+
+hive> create table xml(lin string);
+hive> load data local inpath '../sml' into table xml;
+hive> select * from xml;
+<rec><name>Ravi</name><age>25</age><city>hyd</city></rec>
+<rec><name>Rani</name><age>24</age><gender>f</gender></rec>
+<rec><name>Sampath</name><gender>m</gender><city>Del</city></rec>
+hive> select count(*) from xml;
+OK
+3
+Time taken: 41.139 seconds, Fetched: 1 row(s)
+
+hive> select xpath_string(lin, 'rec/name'), xpath_int(lin, 'rec/age'), xpath_string(lin, 'rec/gender'),xpath_string(lin, 'rec/city') from xml;
+Ravi	25		hyd
+Rani	24	f	
+Sampath	0	m	Del
+
+-----------------------------------------XML with NESTED TAGS--------------------------------------------------
+Create a xml file in the LFS.
+
+hive> load data local inpath '../xml2' into table xml_nest;
+hive> select * from xml_nest;
+<rec><name><fname>Ravi</fname><lname>kumar</lname></name><age>25</age><contact><email><personal>ravi@gmail.com</personal><official>ravi@infy.com</official></email><phone><mobile>9988665544</mobile><office>9977665544</office><residence>9955443333</residence></phone></contact></rec>
+
+hive> select xpath_string(line,'rec/name/fname'),xpath_string(line,'rec/name/lname'),xpath_int(line,'rec/age'),xpath_string(line,'rec/contact/email/personal'),xpath_string(line,'rec/contact/email/official'),xpath_string(line,'rec/contact/phone/mobile'),xpath_string(line,'rec/contact/phone/office'),xpath_string(line,'rec/contact/phone/residence') from xml_nest;
+OK
+Ravi	kumar	25	ravi@gmail.com	ravi@infy.com	9988665544	9977665544	9955443333
+
+---------------------------------------------------PARTITIONING --------------------------------
+
+hive> create table emp_partition(id int, name string, sal int, gender string, dno int)
+    > partitioned by (s string)
+    > row format delimited 
+    > fields terminated by ',';
+OK
+Time taken: 0.196 seconds
+hive> insert overwrite table emp_partition
+    > partition(s='m')
+    > select * from emp where gender = 'm';
+hive> select * from emp_partition limit 3;
+OK
+101	aaa	1000	m	11	m
+103	ccc	3000	m	12	m
+105	eee	5000	m	11	m
+
+--------------------------------------------------BUCKETING -------------------------------
+
+create a table called junesales in the LFS.
+hive> load data local inpath '.../practice/junesale' into table junesales;
+Loading data to table hive_queries2_practice.junesales
+OK
+Time taken: 0.648 seconds
+hive> select * from junesales limit 5;
+OK
+p1	1000
+p2	3000
+p3	5000
+p4	7000
+p5	9000
+
+hive> set hive.enforce.bucketing=true;
+hive> create table junesales_bucket(pid string, price int)
+    > clustered by (pid)
+    > into 3 buckets;
+OK
+hive> insert overwrite table junesales_bucket 
+    > select * from junesales;
+hive> select * from junesales_bucket limit 4;
+OK
+p5	9000
+	NULL
+p2	3000
+p2	3000
+
+
+-------------------------------------------------Additional information for future----------------------
+Integrating Sqoop with Hive
+
+sqoop import --connect jdbc:mysql://localhost/testdb
+--username root -P
+--table table_name --hive-import --hive-table hive_table_name

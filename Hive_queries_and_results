@@ -171,9 +171,18 @@ Create a xml file in the LFS.
 
 hive> load data local inpath '../xml2' into table xml_nest;
 hive> select * from xml_nest;
-<rec><name><fname>Ravi</fname><lname>kumar</lname></name><age>25</age><contact><email><personal>ravi@gmail.com</personal><official>ravi@infy.com</official></email><phone><mobile>9988665544</mobile><office>9977665544</office><residence>9955443333</residence></phone></contact></rec>
+<rec><name><fname>Ravi</fname><lname>kumar</lname></name><age>25</age>
+<contact><email><personal>ravi@gmail.com</personal><official>ravi@infy.com</official></email>
+<phone><mobile>9988665544</mobile><office>9977665544</office>
+<residence>9955443333</residence></phone></contact></rec>
 
-hive> select xpath_string(line,'rec/name/fname'),xpath_string(line,'rec/name/lname'),xpath_int(line,'rec/age'),xpath_string(line,'rec/contact/email/personal'),xpath_string(line,'rec/contact/email/official'),xpath_string(line,'rec/contact/phone/mobile'),xpath_string(line,'rec/contact/phone/office'),xpath_string(line,'rec/contact/phone/residence') from xml_nest;
+hive> select xpath_string(line,'rec/name/fname'),xpath_string(line,
+'rec/name/lname'),xpath_int(line,'rec/age'),
+xpath_string(line,'rec/contact/email/personal'),
+xpath_string(line,'rec/contact/email/official'),
+xpath_string(line,'rec/contact/phone/mobile'),
+xpath_string(line,'rec/contact/phone/office'),
+xpath_string(line,'rec/contact/phone/residence') from xml_nest;
 OK
 Ravi	kumar	25	ravi@gmail.com	ravi@infy.com	9988665544	9977665544	9955443333
 

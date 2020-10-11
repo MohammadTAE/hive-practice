@@ -1,0 +1,83 @@
+1) Create two table in LFS: (a) emps1 (b) dept1
+
+  hive> create table emp(id int, name string, sal int, gender string, dno int)
+        > row format delimited
+        > fields terminated by ',';
+  hive> load data local inpath '../emps1' into table emp;
+  hive> hive> select * from emp;
+        OK
+        101	aaa	1000	m	11
+        102	bbb	2000	f	12
+  hive> create table dept(dno int, dname string, city string)
+    > row format delimited
+    > fields terminated by ',';
+  hive> load data local inpath '../dept1' INTO TABLE dept;
+
+  hive> select * from dept;
+      OK
+      11	mrkt	hyd
+      12	HR	delhi
+
+  ----------------------------------------------------------------------
+                       JOINING
+  --------------------------------------------------------------------
+  hive> select e.id, e.name, e.sal, e.gender, e.dno, d.dno, d.dname, d.city
+    > from emp as e 
+    > join dept as d on (e.dno = d.dno);
+
+  hive> select e.id, e.name, e.sal, e.gender, e.dno, d.dno, d.dname, d.city
+    > from emp as e 
+    > left outer join dept as d on (e.dno = d.dno);
+
+  hive> select e.id, e.name, e.sal, e.gender, e.dno, d.dno, d.dname, d.city
+    > from emp as e 
+    > right outer join dept as d on (e.dno = d.dno);
+
+  hive> select e.id, e.name, e.sal, e.gender, e.dno, d.dno, d.dname, d.city
+    > from emp as e 
+    > full outer join dept as d on (e.dno = d.dno);
+ 
+  hive> create table fullouter(id int, name string, sal int, gender string, dno int, dname string, city string); 
+  hive> insert overwrite table fullouter select e.id, e.name, e.sal, e.gender, e.dno, d.dname, d.city
+    > from emp as e
+    > full outer join dept as d on (e.dno= d.dno);
+  hive> select * from fullouter limit 3;
+OK
+105	eee	5000	m	11	mrkt	hyd
+101	aaa	1000	m	11	mrkt	hyd
+103	ccc	3000	m	12	HR	delhi
+ 
+
+------------------------------------------------------------------------------------------------
+                                        JSON
+--------------------------------------------------------------------------------------------
+Create jason file in the LFS: json1 
+
+hive> create table jsonsamp1(line string);
+hive> select * from jsonsamp1;
+     OK
+     {"name":"Blake","age":25,"gender":"m"}
+     {"name":"Ramya","age":27,"gender":"f"}
+hive> select get_json_object(line,"$.name"),
+      get_json_object(line,"$.age"),get_json_object(line,"$.gender"),
+      get_json_object(line,"$.city") from jsonsamp1 limit 2;
+    OK
+   Blake	25	m	NULL
+   Ramya	27	f	NULL
+
+hive> select x.* from jsonsamp1 
+    > lateral view json_tuple(line, 'name', 'age', 'gender', 'city') x as n,a,g,c;
+    OK
+    Blake	25	m	NULL
+    Ramya	27	f	NULL
+hive> create table jasonsamp3(name string, age int, gender string, city string);
+hive> insert overwrite table jasonsamp3 select x.* from jsonsamp1 
+hive> lateral view json_tuple(line, 'name','age','gender', 'city') x as n,a,g,c;
+hive> select * from  jasonsamp3 limit 2;
+OK
+Blake	25	m	NULL
+Ramya	27	f	NULL
+
+
+  
+  

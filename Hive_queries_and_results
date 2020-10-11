@@ -79,5 +79,72 @@ Blake	25	m	NULL
 Ramya	27	f	NULL
 
 
-  
-  
+----------------------------------NESTED JSON------------------------------
+Create a json file at the LFS:
+hive> load data local inpath '.../json2' into table js_nested; 
+hove> select * from js_nested limit 2;
+OK
+{"name":"Ravi","age":25,"wife":{"name":"banu","age":24},"city":"hyd"}
+{"name":"Ajay","age":26,"wife":{"name":"kavitha","age":21},"city":"pune"}
+
+hive> create table js_nested_1(name string, age int, wife string, city string);
+OK
+Time taken: 0.203 seconds
+hive> insert overwrite table js_nested_1
+    > select x.* from js_nested
+    > lateral view json_tuple(line, 'name', 'age', 'wife', 'city') x as n, a, w, c;
+hive> select * from js_nested_1;
+OK
+Ravi	25	{"name":"banu","age":24}	hyd
+Ajay	26	{"name":"kavitha","age":21}	pune
+
+hive> create table js_nested_2(name string, emp_age int, wname string, wage int, city string);
+OK
+Time taken: 0.252 seconds
+hive> insert overwrite table js_nested_2
+    > select name, age, get_json_object(wife,'$.name'), get_json_object(wife, '$.age'), city from js_nested_1;
+hive> select * from js_nested_2;
+OK
+Ravi	25	banu	24	hyd
+Ajay	26	kavitha	21	pune
+ 
+---------------------------------------------------URL----------------------------------------------
+Create a url table in the LFS.
+
+hive> create table url(line string); 
+hive> load data local inpath '.../urls' into url;
+select * from url;
+http://yoursite.com/bigdata/mongodb?name=Raj&age=25&city=hyd
+http://yoursite.com/bigdata/spark?name=Swapna&city=del&desig=se
+
+hive> create table url_struct(host string, path string, query string);
+hive> insert overwrite table url_struct
+    > select x.* from url
+    > lateral view parse_url_tuple(line, 'HOST', 'PATH', 'QUERY') x as h, p, q;
+hive> select * from url_struct;
+yoursite.com	/bigdata/mongodb	name=Raj&age=25&city=hyd
+yoursite.com	/bigdata/spark	name=Swapna&city=del&desig=se
+
+hive> create table url_struct1(host string, path array<string>, query map<string, string>);
+hive> insert overwrite table url_struct1
+    > select host, split(path, '/'), str_to_map(query, '&', '=') from url_struct;
+hive> select * from url_struct1;
+yoursite.com	["","bigdata","mongodb"]	{"name":"Raj","age":"25","city":"hyd"}
+yoursite.com	["","bigdata","spark"]	{"name":"Swapna","city":"del","desig":"se"}
+
+hive> select map_keys(query) from url_struct1; 
+["name","age","city"]
+["name","city","desig"]
+
+hive> select map_values(query) from url_struct1;
+["Raj","25","hyd"]
+["Swapna","del","se"]
+
+hive> create table url_struct2(host string, category string, course string, name string, age int, gender string, city string, desig string);
+hive> insert overwrite table url_struct2
+    > select host, path[1], path[2], query['name'], query['age'], query['gender'], query['city'], query['desig'] from url_struct1;
+hive> select * from url_struct2;
+yoursite.com	bigdata	mongodb	Raj	25	NULL	hyd	NULL
+yoursite.com	bigdata	spark	Swapna	NULL	NULL	del	se
+
+ 
